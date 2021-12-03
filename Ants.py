@@ -62,7 +62,7 @@ class Matrix:
     def randomPheromones(self):
         for r in range(0,self.rows-1):
             for c in range(0,self.columns-1):
-                self.adjMatrix[r][c]= random.randint(0,1)
+                self.adjMatrix[r][c]= random.random(0,1)
 
     def getRows(self):
         return self.rows
@@ -120,12 +120,46 @@ def antColony(graph, p, e, b, k):
 
     while(True):
         for a in range(0, len(p)-1):
+
             tempAnt = Ant(k)
+
             for i in range(0,k-1):
-                
 
+                nextBin = chooseBin(i, conGraph)
+                tempAnt.addTo(nextBin, i)
 
+        tempAnt.updateFitness(b)
 
+#####      
+def binary_search_recursive(array, element, start, end):
+    if start > end:
+        return -1
 
+    mid = (start + end) // 2
+    if element == array[mid]:
+        return mid
+
+    if element < array[mid]:
+        return binary_search_recursive(array, element, start, mid-1)
+    else:
+        return binary_search_recursive(array, element, mid+1, end)
+
+def chooseBin(curItem, conGraph):
+    bins = conGraph.getRows()
+
+    fitness = [0.0 for x in range(0,bins)]
+    fitness[0] = conGraph.get(0, curItem)
+
+    for i in range(1, bins-1):
+        fitness[i] = fitness[i-1] + conGraph.get(i, curItem)
+
+    random = random.random() * fitness[bins-1]
+    
+    binNum = binary_search_recursive(fitness, random, 0, len(fitness))
+
+    if (binNum < 0)L:
+        binNum = abs(binNum)
+    
+    return binNum
 
         
