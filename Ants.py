@@ -1,16 +1,15 @@
 import random
-
+import numpy as np
+import sys
 class Ant:
-    # Class attribute
-    path=[]
-    fitness=-1
 
+    
     def __init__(self, items):
-        self.path = [0 for x in range(0,items)]
+        self.path = np.zeros(items)
         self.fitness=-1
 
     def addTo(self, nextBin, i):
-      self.path[i]=nextBin
+      self.path[i] = nextBin
 
 
     def getFitness(self):
@@ -20,17 +19,19 @@ class Ant:
         return self.path[i]
     
     def updateFitness(self, b, BPP1):
-        temp_bins = [0 for x in range(0,b)]
+        temp_bins = np.zeros(b)
+        #temp_bins = [0 for x in range(0,b)]
 
-        for i in range(0,(len(self.path)-1)):
+        for i in range(0, len(self.path)):
             if BPP1:
-                temp_bins[self.path[i]] = temp_bins[self.path[i]] + (i+1)
+                temp_bins[int(self.path[i])] = temp_bins[int(self.path[i])] + (i+1)
             else:
                 weight=((i+1)**2)/2
-                temp_bins[self.path[i]] = temp_bins[self.path[i]] + weight
+                temp_bins[int(self.path[i])] = temp_bins[int(self.path[i])] + weight
 
-        heaviest=0
-        lightest=100000
+       
+        lightest=sys.maxsize
+        heaviest=-lightest-1 
 
         for i in range(0, len(temp_bins)):
             if(temp_bins[i] > heaviest):
@@ -52,62 +53,60 @@ class Ant:
 class Matrix:
     #number of rows = bins
     #number of columns = items
-    rows=0
-    columns=0
-    adjMatrix=[]
-
+  
     def __init__(self, bins, items):
-        self.rows=bins
-        self.columns=items
-        self.adjMartrix = [[0]*(items-1)]*(bins-1)
-        print(self.adjMartrix)
+        self.bins=bins
+        self.items=items
+        self.adjMatrix = np.zeros((bins, items))
+
+        #print(np.shape(self.adjMatrix))
+        #print(self.adjMartrix)
         #for b in range(0, bins):
         #self.adjMatrix.append([0 for i in range(0, items)])
 
 
     def randomPheromones(self):
-        for r in range(0,self.rows-1):
-            for c in range(0,self.columns-1):
-                self.adjMatrix[r][c]= random.random()
+        for b in range(0,self.bins):
+            for i in range(0,self.items):
+                self.adjMatrix[b][i]= random.random()
 
-    def getRows(self):
-        return self.rows
+    def getBins(self):
+        return self.bins
 
-    def getColumns(self):
-        return self.columns
+    def getItems(self):
+        return self.items
 
-    def get(self, r, c):
-        return self.adjMatrix[r][c]
+    def get(self, bins, items):
+        return self.adjMatrix[bins][items]
 
     def multiply(self, x):
-        result=Matrix(self.rows, self.columns)
-        for r in range(0,self.rows-1):
-            for c in range(0,self.columns-1):
-                result.adjMatrix[r][c] = x * self.adjMatrix[r][c]
+        result = Matrix(self.bins, self.items)
+        for b in range(0,self.bins-1):
+            for i in range(0,self.items-1):
+                result.set(b, i, x)
         return result
 
     def set(self,bins, items, value):
         self.adjMatrix[bins][items] = value
 
     def toString(self):
-        thisRow = self.getRows()
-        thisCol = self.getColumns()
+        bins = self.getBins()
+        items = self.getItems()
         
         matrixString = ""
         i=0
         j=0
 
-        for i in range(0, thisRow-1):
-            for j in range(0, thisCol-1):
-                if (j == thisCol-1):
-                    matrixString += str(round(float(self.adjMatrix[i][j]),3))
+        for i in range(0, bins):
+            for j in range(0, items):
+                if (j == bins-1):
+                    matrixString += str(round(self.adjMatrix[i][j],3))
                 else:
-                    matrixString += str(round(float(self.adjMatrix[i][j]),3)) + ","
+                    matrixString += str(round(self.adjMatrix[i][j],3)) + ","
             matrixString += "\n"
-
         return matrixString
 
-    
+'''
 def binary_search_recursive(array, element, start, end):
     if start > end:
         return -1
@@ -120,23 +119,25 @@ def binary_search_recursive(array, element, start, end):
         return binary_search_recursive(array, element, start, mid-1)
     else:
         return binary_search_recursive(array, element, mid+1, end)
+'''    
+
 
 def chooseBin(curItem, conGraph):
-    bins = conGraph.getRows()
+    bins = conGraph.getBins()
 
-    fitness = [0.0 for x in range(0,bins)]
+    fitness = np.zeros(bins)
+    #fitness = [0.0 for x in range(0,bins)]
     fitness[0] = conGraph.get(0, curItem)
 
-    for i in range(1, bins-1):
+    for i in range(1, bins):
         fitness[i] = fitness[i-1] + conGraph.get(i, curItem)
 
     randomV = random.random() * fitness[bins-1]
-    
-    binNum = binary_search_recursive(fitness, randomV, 0, len(fitness))
+    binNum=np.searchsorted(fitness, randomV)
+    #binNum = binary_search_recursive(fitness, randomV, 0, len(fitness))
 
     if (binNum < 0):
         binNum = abs(binNum)
-    
     return binNum
 
 
@@ -148,18 +149,18 @@ def antColony(graph, p, e, b, k):
     
     #fitness evaluations
     count = 0
-
+    best=sys.maxsize
     #begin
     while(True):
         
         #for each ant
-        for a in range(0, p-1):
+        for a in range(0, p):
             #create ant
             tempAnt = Ant(k)
 
             #for each item, choose the bin
-            for i in range(0,k-1):
-                nextBin = chooseBin(i, conGraph)
+            for i in range(0, k):
+                nextBin = chooseBin(i, graph)
                 tempAnt.addTo(nextBin, i)
 
 
@@ -172,23 +173,28 @@ def antColony(graph, p, e, b, k):
             antPopulation.append(tempAnt)
 
 
-        pop_it = antPopulation
-        while not pop_it:
+        pop_it = antPopulation.copy()
+        while len(pop_it)>0:
             tempAnt = pop_it.pop(0)
             phmUpdate = 100/tempAnt.getFitness()
 
-            for c in range(0,k-1):
-                graph.set(tempAnt.getRows(c), c, graph.get(tempAnt.getRows(c), c) + phmUpdate)
+            for c in range(0,k):
+                graph.set(int(tempAnt.getBin(c)), c, graph.get(int(tempAnt.getBin(c)), c) + phmUpdate)
 
       
         graph = graph.multiply(e)
 
-        best = antPopulation[0]
+        best = antPopulation[0].getFitness()
 
         if count >= 10000:
             antPopulation.sort(key=lambda x: x.getFitness(), reverse=False)
-            best = antPopulation[0]
-        print("best solution is "+ str(best.getFitness()))
+            print("best solution is "+ str(best))
+            return antPopulation[0]
+
+        
+        antPopulation.sort(key=lambda x: x.getFitness(), reverse=False)
+        if antPopulation[0].getFitness() < best:
+            best = antPopulation[0].getFitness()
 
         antPopulation=[]
 
@@ -196,10 +202,12 @@ def antColony(graph, p, e, b, k):
         
 population = 10
 evaporation = 0.6
-bins = 10
+bins = 50
 items = 500
 conGraph = Matrix(bins, items)
-print(conGraph.toString())
-#conGraph.randomPheromones()
-#result = antColony(conGraph, population, evaporation, bins, items)
+conGraph.randomPheromones()
+#print('TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT')
+#print(conGraph.multiply(1000))
+
+result = antColony(conGraph, population, evaporation, bins, items)
 #print(result.toString)
