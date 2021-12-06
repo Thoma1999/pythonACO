@@ -1,16 +1,15 @@
 import random
 import numpy as np
 import sys
-class Ant:
+from collections import defaultdict
 
-    
+class Ant:
     def __init__(self, items):
         self.path = np.zeros(items)
         self.fitness=-1
 
     def addTo(self, nextBin, i):
       self.path[i] = nextBin
-
 
     def getFitness(self):
         return self.fitness
@@ -20,8 +19,7 @@ class Ant:
     
     def updateFitness(self, b, BPP1):
         temp_bins = np.zeros(b)
-        #temp_bins = [0 for x in range(0,b)]
-
+      
         for i in range(0, len(self.path)):
             if BPP1:
                 temp_bins[int(self.path[i])] = temp_bins[int(self.path[i])] + (i+1)
@@ -29,7 +27,10 @@ class Ant:
                 weight=((i+1)**2)/2
                 temp_bins[int(self.path[i])] = temp_bins[int(self.path[i])] + weight
 
-       
+        temp_bins=np.sort(temp_bins)
+        heaviest = temp_bins[-1]
+        lightest = temp_bins[0]
+        '''
         lightest=sys.maxsize
         heaviest=-lightest-1 
 
@@ -39,16 +40,29 @@ class Ant:
 
             if (temp_bins[i] < lightest):
                 lightest = temp_bins[i]
-
+        '''
         self.fitness = heaviest - lightest
 
-    def toString(self):
+    def toString(self, bins, items):
+        
+        bin_dict = {}
+        for i in range(0,bins):
+            bin = []
+            for j in range(0,items):
+                if int(self.path[j]) == i:
+                    bin.append(j+1)
+            bin_dict['Bin '+str(i+1)] = bin
+        return bin_dict
+            
+        '''bin_dict = defaultdict(list)
         output=""
         for i in range(0,len(self.path)):
-            output+= "item: " + str(i+1) + " in bin: " + str(self.path[i]+1) + "\n"
+            self.path[i]+1
+            output+= "item: " + str(i+1) + " in bin: " + str(int(self.path[i]+1)) + "\n"
         output+="Total fitness is" + str(self.fitness) + "\n"
         output+="\n"
-        return output
+        return output'''
+        
 
 class Matrix:
     #number of rows = bins
@@ -59,7 +73,7 @@ class Matrix:
         self.items=items
         self.adjMatrix = np.zeros((bins, items))
 
-        #print(np.shape(self.adjMatrix))
+
         #print(self.adjMartrix)
         #for b in range(0, bins):
         #self.adjMatrix.append([0 for i in range(0, items)])
@@ -69,6 +83,7 @@ class Matrix:
         for b in range(0,self.bins):
             for i in range(0,self.items):
                 self.adjMatrix[b][i]= random.random()
+        
 
     def getBins(self):
         return self.bins
@@ -81,8 +96,8 @@ class Matrix:
 
     def multiply(self, x):
         result = Matrix(self.bins, self.items)
-        for b in range(0,self.bins-1):
-            for i in range(0,self.items-1):
+        for b in range(0,self.bins):
+            for i in range(0,self.items):
                 result.set(b, i, x)
         return result
 
@@ -127,6 +142,7 @@ def chooseBin(curItem, conGraph):
 
     fitness = np.zeros(bins)
     #fitness = [0.0 for x in range(0,bins)]
+
     fitness[0] = conGraph.get(0, curItem)
 
     for i in range(1, bins):
@@ -149,11 +165,9 @@ def antColony(graph, p, e, b, k):
     
     #fitness evaluations
     count = 0
-    best=sys.maxsize
     #begin
     while(True):
-        
-        #for each ant
+        #create p ants
         for a in range(0, p):
             #create ant
             tempAnt = Ant(k)
@@ -184,17 +198,19 @@ def antColony(graph, p, e, b, k):
       
         graph = graph.multiply(e)
 
-        best = antPopulation[0].getFitness()
+        
 
         if count >= 10000:
             antPopulation.sort(key=lambda x: x.getFitness(), reverse=False)
-            print("best solution is "+ str(best))
+            print("best solution is "+ str(antPopulation[0].getFitness()))
             return antPopulation[0]
 
         
+        '''
         antPopulation.sort(key=lambda x: x.getFitness(), reverse=False)
         if antPopulation[0].getFitness() < best:
-            best = antPopulation[0].getFitness()
+            best = antPopulation[0].getFitness()#
+        '''
 
         antPopulation=[]
 
@@ -210,4 +226,6 @@ conGraph.randomPheromones()
 #print(conGraph.multiply(1000))
 
 result = antColony(conGraph, population, evaporation, bins, items)
-#print(result.toString)
+bin_assigment = result.toString(bins, items)
+for i in range(0,bins):
+    print('Bin '+str(i+1)+str(bin_assigment['Bin '+str(i+1)]))
